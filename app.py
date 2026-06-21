@@ -383,6 +383,38 @@ if ticker:
             ''', unsafe_allow_html=True)
         
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+        # ============ ADVANCED CHARTING ============
+        st.markdown('<h2 class="section-title">📈 Technical Charts</h2>', unsafe_allow_html=True)
+        
+        chart_tab1, chart_tab2 = st.tabs(["🕯️ Candlestick", "📉 Clean Trend Line"])
+        
+        common_layout = dict(
+            template="plotly_dark", height=450,
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            margin=dict(l=0, r=0, t=20, b=0),
+            xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+            yaxis=dict(gridcolor='rgba(255,255,255,0.05)')
+        )
+
+        with chart_tab1:
+            fig_candle = go.Figure(data=[go.Candlestick(
+                x=hist_data.index, open=hist_data['Open'], high=hist_data['High'], low=hist_data['Low'], close=hist_data['Close'],
+                increasing_line_color='#00FF88', decreasing_line_color='#FF3333'
+            )])
+            fig_candle.update_layout(**common_layout)
+            st.plotly_chart(fig_candle, use_container_width=True)
+
+        with chart_tab2:
+            fig_line = go.Figure()
+            fig_line.add_trace(go.Scatter(
+                x=hist_data.index, y=hist_data['Close'], mode='lines', fill='tozeroy', 
+                line=dict(color='#00D4FF', width=2), fillcolor='rgba(0, 212, 255, 0.1)'
+            ))
+            fig_line.update_layout(yaxis_title="Price (USD)", **common_layout)
+            st.plotly_chart(fig_line, use_container_width=True)
+            
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         
         # ============ AI TOOLS SECTION - THE MAIN FEATURE ============
         st.markdown('<h2 class="section-title">🤖 10 AI Analysis Tools (Running...)</h2>', unsafe_allow_html=True)
