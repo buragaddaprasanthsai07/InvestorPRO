@@ -293,13 +293,8 @@ if market_data:
     for name, data in market_data.items():
         color = "#00FF88" if data['change'] >= 0 else "#FF3333" 
         sign = "+" if data['change'] >= 0 else ""
-        ticker_html += f'''
-            <div style="font-family: 'Space Mono', monospace; font-size: 0.95rem; margin: 5px 10px;">
-                <span style="color: #a0a0ff; font-weight: 700; margin-right: 8px;">{name}</span>
-                <span style="color: #e0e0ff; font-weight: 600; margin-right: 8px;">{data['price']:,.2f}</span>
-                <span style="color: {color}; font-weight: 600;">{sign}{data['change']:,.2f} ({sign}{data['pct']:.2f}%)</span>
-            </div>
-        '''
+        # Flattened into a single line to prevent Streamlit from turning it into a Markdown code block
+        ticker_html += f"<div style=\"font-family: 'Space Mono', monospace; font-size: 0.95rem; margin: 5px 10px;\"><span style=\"color: #a0a0ff; font-weight: 700; margin-right: 8px;\">{name}</span><span style=\"color: #e0e0ff; font-weight: 600; margin-right: 8px;\">{data['price']:,.2f}</span><span style=\"color: {color}; font-weight: 600;\">{sign}{data['change']:,.2f} ({sign}{data['pct']:.2f}%)</span></div>"
     ticker_html += '</div>'
     st.markdown(ticker_html, unsafe_allow_html=True)
 
