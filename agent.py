@@ -126,4 +126,12 @@ def run_financial_analysis(ticker: str, user_query: str = None) -> str:
         return response.text
     
     except Exception as e:
-        return f"Analysis error: {str(e)}"
+        error_msg = str(e)
+        if "429" in error_msg or "Quota" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            return """⚠️ **System Cooling Down (API Rate Limit Reached)**
+            
+Because this application runs on the Google Gemini Free Tier, it is limited to 15 requests per minute. You have successfully triggered the safety limit! 
+
+**Please wait exactly 60 seconds and try your search again.**"""
+            
+        return f"Analysis error: {error_msg}"
