@@ -329,11 +329,16 @@ if ticker:
     try:
         with st.spinner(f"⚡ Loading {ticker}..."):
             hist_data, info = fetch_market_data(ticker)
-        
+            
+        # 🛡️ SAFETY NET: Check if Yahoo Finance blocked the data
+        if hist_data.empty:
+            raise ValueError(f"Yahoo Finance returned no data. This is usually a temporary Cloud IP block. Please wait 60 seconds and try again!")
+            
+        # Safe calculations
         current_price = info.get('currentPrice') or info.get('regularMarketPrice') or hist_data['Close'].iloc[-1]
-        previous_price = info.get('previousClose') or hist_data['Close'].iloc[-2]
+        previous_price = info.get('previousClose') or (hist_data['Close'].iloc[-2] if len(hist_data) > 1 else current_price)
         price_change = current_price - previous_price
-        pct_change = (price_change / previous_price) * 100
+        pct_change = (price_change / previous_price) * 100 if previous_price != 0 else 0
         
         # ============ QUICK STATS ============
         st.markdown('<h2 class="section-title">📊 Quick Overview</h2>', unsafe_allow_html=True)
