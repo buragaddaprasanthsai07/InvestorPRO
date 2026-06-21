@@ -246,6 +246,36 @@ st.markdown("""
         from { opacity: 0; }
         to { opacity: 1; }
     }
+    
+    .tool-box {
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(131, 56, 236, 0.08));
+        border-left: 4px solid #00D4FF;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 15px 0;
+        animation: slideUp 0.6s ease-out;
+    }
+    
+    .tool-title {
+        color: #00D4FF;
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .tool-icon {
+        font-size: 1.3rem;
+    }
+    
+    .tool-content {
+        color: #e0e0ff;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -256,6 +286,27 @@ def fetch_market_data(ticker):
     stock_hist = stock.history(period="1y")
     return stock_hist, stock.info
 
+@st.cache_data(ttl=300) 
+def fetch_market_indices():
+    indices = {
+        "NIFTY 50": "^NSEI",
+        "SENSEX": "^BSESN",
+        "BANKNIFTY": "^NSEBANK"
+    }
+    results = {}
+    for name, ticker in indices.items():
+        try:
+            hist = yf.Ticker(ticker).history(period="5d")
+            if not hist.empty and len(hist) >= 2:
+                current = hist['Close'].iloc[-1]
+                prev = hist['Close'].iloc[-2]
+                change = current - prev
+                pct = (change/prev) * 100
+                results[name] = {"price": current, "change": change, "pct": pct}
+        except:
+            pass
+    return results
+
 # ============ MAIN INTERFACE ============
 col1, col2 = st.columns([3, 1])
 with col1:
@@ -264,6 +315,17 @@ with col2:
     st.markdown(f'<div style="text-align: right; color: #a0a0ff; font-size: 0.9rem;">{datetime.now().strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+# ============ LIVE MARKET TICKER ============
+market_data = fetch_market_indices()
+if market_data:
+    ticker_html = '<div style="display: flex; justify-content: space-around; flex-wrap: wrap; background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.2); padding: 15px 20px; border-radius: 10px; margin-bottom: 25px; backdrop-filter: blur(5px);">'
+    for name, data in market_data.items():
+        color = "#00FF88" if data['change'] >= 0 else "#FF3333" 
+        sign = "+" if data['change'] >= 0 else ""
+        ticker_html += f"<div style=\"font-family: 'Space Mono', monospace; font-size: 0.95rem; margin: 5px 10px;\"><span style=\"color: #a0a0ff; font-weight: 700; margin-right: 8px;\">{name}</span><span style=\"color: #e0e0ff; font-weight: 600; margin-right: 8px;\">{data['price']:,.2f}</span><span style=\"color: {color}; font-weight: 600;\">{sign}{data['change']:,.2f} ({sign}{data['pct']:.2f}%)</span></div>"
+    ticker_html += '</div>'
+    st.markdown(ticker_html, unsafe_allow_html=True)
 
 # ============ SEARCH SECTION ============
 st.markdown('<div class="search-container">', unsafe_allow_html=True)
@@ -353,24 +415,21 @@ if ticker:
         # ============ ADVANCED CHARTING ============
         st.markdown('<h2 class="section-title">📈 Technical Charts</h2>', unsafe_allow_html=True)
         
-        # 1. The Interactive Time Selector
         period_options = ["1D", "1W", "1M", "3M", "6M", "1Y", "5Y", "MAX"]
         selected_period_label = st.radio(
             "Select Time Period", 
             options=period_options, 
-            index=5, # Defaults to "1Y" when the page loads
+            index=5, 
             horizontal=True,
             label_visibility="collapsed"
         )
         
-        # 2. Map the label to Yahoo Finance's exact format
         period_mapping = {
             "1D": "1d", "1W": "5d", "1M": "1mo", "3M": "3mo", 
             "6M": "6mo", "1Y": "1y", "5Y": "5y", "MAX": "max"
         }
         selected_period = period_mapping[selected_period_label]
         
-        # 3. Fetch specific data for the chart dynamically
         with st.spinner(f"Updating chart for {selected_period_label}..."):
             if selected_period == "1d":
                 chart_data = yf.Ticker(ticker).history(period="1d", interval="5m")
@@ -393,19 +452,16 @@ if ticker:
         )
 
         with chart_tab1:
-            # Create subplots: 2 rows (Top for Candle, Bottom for Volume)
             fig_candle = make_subplots(rows=2, cols=1, shared_xaxes=True, 
                                        vertical_spacing=0.03, subplot_titles=('', ''),
                                        row_width=[0.2, 0.7])
 
-            # Add Candlestick trace
             fig_candle.add_trace(go.Candlestick(
                 x=chart_data.index, open=chart_data['Open'], high=chart_data['High'], low=chart_data['Low'], close=chart_data['Close'],
                 increasing_line_color='#00FF88', decreasing_line_color='#FF3333',
                 name='Price'
             ), row=1, col=1)
 
-            # Add Volume trace
             colors = ['#00FF88' if row['Close'] >= row['Open'] else '#FF3333' for index, row in chart_data.iterrows()]
             fig_candle.add_trace(go.Bar(
                 x=chart_data.index, y=chart_data['Volume'],
@@ -428,95 +484,144 @@ if ticker:
             
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         
-        # ============ MULTI-TOOL DATA TERMINAL ============
-        st.markdown('<h2 class="section-title">📊 Granular Data Terminal</h2>', unsafe_allow_html=True)
-        st.markdown('<p style="color: #a0a0ff; margin-top: -15px; margin-bottom: 20px;">Click through the tabs below to inspect raw metrics pulled from the 10 analysis tools.</p>', unsafe_allow_html=True)
+        # ============ RESTORED AI TOOLS SECTION ============
+        st.markdown('<h2 class="section-title">🤖 10 AI Analysis Tools (Running...)</h2>', unsafe_allow_html=True)
+        st.markdown('<p style="color: #a0a0ff; margin-bottom: 20px;">Watch as AI tools analyze your stock from multiple angles:</p>', unsafe_allow_html=True)
         
-        # Create tabs matching the layout of professional terminals
-        terminal_tabs = st.tabs([
-            "📋 Fundamentals", 
-            "📰 Recent News", 
-            "📈 Dividends", 
-            "⚠️ Risk Profile", 
-            "📊 Growth Metrics", 
-            "👥 Insider Activity",
-            "💎 Valuation Snapshot",
-            "🎯 Price Targets & Quality"
-        ])
+        tool_col1, tool_col2 = st.columns(2)
         
-        with terminal_tabs[0]:
-            st.markdown("### Core Financial Fundamentals")
-            try:
-                fundamentals_raw = get_stock_fundamentals(ticker)
-                st.text_area("Raw Data Output", value=fundamentals_raw, height=250, label_visibility="collapsed")
-            except Exception as e:
-                st.error(f"Could not load fundamentals: {e}")
-                
-        with terminal_tabs[1]:
-            st.markdown("### Market News & Sentiment Headlines")
-            try:
-                news_raw = get_recent_news(ticker)
-                st.text_area("Raw Data Output", value=news_raw, height=250, label_visibility="collapsed")
-            except Exception as e:
-                st.error(f"Could not load news: {e}")
-                
-        with terminal_tabs[2]:
-            st.markdown("### Dividend History & Yield Analysis")
-            try:
-                dividend_raw = analyze_dividend_potential(ticker)
-                st.text_area("Raw Data Output", value=dividend_raw, height=250, label_visibility="collapsed")
-            except Exception as e:
-                st.error(f"Could not load dividend metrics: {e}")
-                
-        with terminal_tabs[3]:
-            st.markdown("### Mathematical Risk & Volatility Assessment")
-            try:
-                risk_raw = assess_risk_profile(ticker)
-                st.text_area("Raw Data Output", value=risk_raw, height=250, label_visibility="collapsed")
-            except Exception as e:
-                st.error(f"Could not load risk metrics: {e}")
-                
-        with terminal_tabs[4]:
-            st.markdown("### Historical Growth & Operational Performance")
-            try:
-                growth_raw = analyze_growth_metrics(ticker)
-                st.text_area("Raw Data Output", value=growth_raw, height=250, label_visibility="collapsed")
-            except Exception as e:
-                st.error(f"Could not load growth metrics: {e}")
-                
-        with terminal_tabs[5]:
-            st.markdown("### Corporate Insider Trading Activity")
-            try:
-                insider_raw = analyze_insider_activity(ticker)
-                st.text_area("Raw Data Output", value=insider_raw, height=250, label_visibility="collapsed")
-            except Exception as e:
-                st.error(f"Could not load insider activity: {e}")
-                
-        with terminal_tabs[6]:
-            st.markdown("### Valuation & Multiples Snapshot")
-            try:
-                valuation_raw = valuation_snapshot(ticker)
-                st.text_area("Raw Data Output", value=valuation_raw, height=250, label_visibility="collapsed")
-            except Exception as e:
-                st.error(f"Could not load valuation snapshot: {e}")
-                
-        with terminal_tabs[7]:
-            col_t1, col_t2 = st.columns(2)
-            with col_t1:
-                st.markdown("### Quantitative Quality Score")
-                try:
-                    quality_raw = calculate_quality_score(ticker)
-                    st.info(quality_raw)
-                except Exception as e:
-                    st.error(f"Could not compute score: {e}")
-            with col_t2:
-                st.markdown("### Target Pricing Projections")
-                try:
-                    target_raw = estimate_price_target(ticker)
-                    st.success(target_raw)
-                except Exception as e:
-                    st.error(f"Could not compute target targets: {e}")
-                    
+        with tool_col1:
+            with st.spinner("⏳ Tool 1: Analyzing fundamentals..."):
+                time.sleep(0.5)
+                fundamentals = get_stock_fundamentals(ticker)
+            st.markdown(f'''
+                <div class="tool-box">
+                    <div class="tool-title">
+                        <span class="tool-icon">1️⃣</span>
+                        Stock Fundamentals
+                    </div>
+                    <div class="tool-content">{fundamentals}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            
+            with st.spinner("⏳ Tool 3: Comparing performance..."):
+                time.sleep(0.5)
+                performance = compare_performance(ticker)
+            st.markdown(f'''
+                <div class="tool-box">
+                    <div class="tool-title">
+                        <span class="tool-icon">3️⃣</span>
+                        Performance vs S&P 500
+                    </div>
+                    <div class="tool-content">{performance}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            
+            with st.spinner("⏳ Tool 5: Assessing risk..."):
+                time.sleep(0.5)
+                risk = assess_risk_profile(ticker)
+            st.markdown(f'''
+                <div class="tool-box">
+                    <div class="tool-title">
+                        <span class="tool-icon">5️⃣</span>
+                        Risk Assessment
+                    </div>
+                    <div class="tool-content">{risk}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            
+            with st.spinner("⏳ Tool 7: Checking insider activity..."):
+                time.sleep(0.5)
+                insider = analyze_insider_activity(ticker)
+            st.markdown(f'''
+                <div class="tool-box">
+                    <div class="tool-title">
+                        <span class="tool-icon">7️⃣</span>
+                        Insider Activity
+                    </div>
+                    <div class="tool-content">{insider}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            
+            with st.spinner("⏳ Tool 9: Calculating quality score..."):
+                time.sleep(0.5)
+                quality = calculate_quality_score(ticker)
+            st.markdown(f'''
+                <div class="tool-box">
+                    <div class="tool-title">
+                        <span class="tool-icon">9️⃣</span>
+                        Quality Score (A-F Rating)
+                    </div>
+                    <div class="tool-content">{quality}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            
+        with tool_col2:
+            with st.spinner("⏳ Tool 2: Gathering news..."):
+                time.sleep(0.5)
+                news = get_recent_news(ticker)
+            st.markdown(f'''
+                <div class="tool-box">
+                    <div class="tool-title">
+                        <span class="tool-icon">2️⃣</span>
+                        News & Sentiment
+                    </div>
+                    <div class="tool-content">{news}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            
+            with st.spinner("⏳ Tool 4: Analyzing dividends..."):
+                time.sleep(0.5)
+                dividend = analyze_dividend_potential(ticker)
+            st.markdown(f'''
+                <div class="tool-box">
+                    <div class="tool-title">
+                        <span class="tool-icon">4️⃣</span>
+                        Dividend Analysis
+                    </div>
+                    <div class="tool-content">{dividend}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            
+            with st.spinner("⏳ Tool 6: Analyzing growth..."):
+                time.sleep(0.5)
+                growth = analyze_growth_metrics(ticker)
+            st.markdown(f'''
+                <div class="tool-box">
+                    <div class="tool-title">
+                        <span class="tool-icon">6️⃣</span>
+                        Growth Metrics
+                    </div>
+                    <div class="tool-content">{growth}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            
+            with st.spinner("⏳ Tool 8: Creating valuation snapshot..."):
+                time.sleep(0.5)
+                valuation = valuation_snapshot(ticker)
+            st.markdown(f'''
+                <div class="tool-box">
+                    <div class="tool-title">
+                        <span class="tool-icon">8️⃣</span>
+                        Valuation Snapshot
+                    </div>
+                    <div class="tool-content">{valuation}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            
+            with st.spinner("⏳ Tool 10: Estimating price targets..."):
+                time.sleep(0.5)
+                targets = estimate_price_target(ticker)
+            st.markdown(f'''
+                <div class="tool-box">
+                    <div class="tool-title">
+                        <span class="tool-icon">🔟</span>
+                        Price Target Estimation
+                    </div>
+                    <div class="tool-content">{targets}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         
         # ============ COMPREHENSIVE AI SYNTHESIS ============
