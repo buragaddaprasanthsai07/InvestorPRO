@@ -256,27 +256,6 @@ def fetch_market_data(ticker):
     stock_hist = stock.history(period="1y")
     return stock_hist, stock.info
 
-@st.cache_data(ttl=300) # Caches for 5 minutes so it doesn't break API limits
-def fetch_market_indices():
-    indices = {
-        "NIFTY 50": "^NSEI",
-        "SENSEX": "^BSESN",
-        "BANKNIFTY": "^NSEBANK"
-    }
-    results = {}
-    for name, ticker in indices.items():
-        try:
-            hist = yf.Ticker(ticker).history(period="5d")
-            if not hist.empty and len(hist) >= 2:
-                current = hist['Close'].iloc[-1]
-                prev = hist['Close'].iloc[-2]
-                change = current - prev
-                pct = (change/prev) * 100
-                results[name] = {"price": current, "change": change, "pct": pct}
-        except:
-            pass
-    return results
-
 # ============ MAIN INTERFACE ============
 col1, col2 = st.columns([3, 1])
 with col1:
@@ -285,18 +264,6 @@ with col2:
     st.markdown(f'<div style="text-align: right; color: #a0a0ff; font-size: 0.9rem;">{datetime.now().strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-
-# ============ LIVE MARKET TICKER ============
-market_data = fetch_market_indices()
-if market_data:
-    ticker_html = '<div style="display: flex; justify-content: space-around; flex-wrap: wrap; background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.2); padding: 15px 20px; border-radius: 10px; margin-bottom: 25px; backdrop-filter: blur(5px);">'
-    for name, data in market_data.items():
-        color = "#00FF88" if data['change'] >= 0 else "#FF3333" 
-        sign = "+" if data['change'] >= 0 else ""
-        # Flattened into a single line to prevent Streamlit from turning it into a Markdown code block
-        ticker_html += f"<div style=\"font-family: 'Space Mono', monospace; font-size: 0.95rem; margin: 5px 10px;\"><span style=\"color: #a0a0ff; font-weight: 700; margin-right: 8px;\">{name}</span><span style=\"color: #e0e0ff; font-weight: 600; margin-right: 8px;\">{data['price']:,.2f}</span><span style=\"color: {color}; font-weight: 600;\">{sign}{data['change']:,.2f} ({sign}{data['pct']:.2f}%)</span></div>"
-    ticker_html += '</div>'
-    st.markdown(ticker_html, unsafe_allow_html=True)
 
 # ============ SEARCH SECTION ============
 st.markdown('<div class="search-container">', unsafe_allow_html=True)
