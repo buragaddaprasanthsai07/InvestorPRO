@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 import time
 from datetime import datetime, timedelta
-from agent_ultimate import run_financial_analysis
-from tools_ultimate import (
+from agent import run_financial_analysis
+from tools import (
     get_stock_fundamentals,
     get_recent_news,
     compare_performance,
