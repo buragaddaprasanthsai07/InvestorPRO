@@ -454,164 +454,67 @@ if ticker:
             
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         
-        # ============ AI TOOLS SECTION - THE MAIN FEATURE ============
-        st.markdown('<h2 class="section-title">🤖 10 AI Analysis Tools (Running...)</h2>', unsafe_allow_html=True)
-        st.markdown('<p style="color: #a0a0ff; margin-bottom: 20px;">Watch as AI tools analyze your stock from multiple angles:</p>', unsafe_allow_html=True)
+        # ============ MULTI-TOOL DATA TERMINAL ============
+        st.markdown('<h2 class="section-title">📊 Granular Data Terminal</h2>', unsafe_allow_html=True)
+        st.markdown('<p style="color: #a0a0ff; margin-top: -15px; margin-bottom: 20px;">Click through the tabs below to inspect raw metrics pulled from the 10 analysis tools.</p>', unsafe_allow_html=True)
         
-        # Create 2 columns for tools
-        tool_col1, tool_col2 = st.columns(2)
+        # Create tabs matching the layout of professional terminals
+        terminal_tabs = st.tabs([
+            "📋 Fundamentals", 
+            "📰 Recent News", 
+            "📈 Dividends", 
+            "⚠️ Risk Profile", 
+            "📊 Growth Metrics", 
+            "👥 Insider Activity",
+            "💎 Valuation Snapshot",
+            "🎯 Price Targets & Quality"
+        ])
         
-        # TOOL 1: Stock Fundamentals
-        with tool_col1:
-            with st.spinner("⏳ Tool 1: Analyzing fundamentals..."):
-                time.sleep(0.5)
-                fundamentals = get_stock_fundamentals(ticker)
-            st.markdown(f'''
-                <div class="tool-box">
-                    <div class="tool-title">
-                        <span class="tool-icon">1️⃣</span>
-                        Stock Fundamentals
-                    </div>
-                    <div class="tool-content">{fundamentals}</div>
-                </div>
-            ''', unsafe_allow_html=True)
-        
-        # TOOL 2: Recent News
-        with tool_col2:
-            with st.spinner("⏳ Tool 2: Gathering news..."):
-                time.sleep(0.5)
-                news = get_recent_news(ticker)
-            st.markdown(f'''
-                <div class="tool-box">
-                    <div class="tool-title">
-                        <span class="tool-icon">2️⃣</span>
-                        News & Sentiment
-                    </div>
-                    <div class="tool-content">{news}</div>
-                </div>
-            ''', unsafe_allow_html=True)
-        
-        # TOOL 3: Performance Comparison
-        with tool_col1:
-            with st.spinner("⏳ Tool 3: Comparing performance..."):
-                time.sleep(0.5)
-                performance = compare_performance(ticker)
-            st.markdown(f'''
-                <div class="tool-box">
-                    <div class="tool-title">
-                        <span class="tool-icon">3️⃣</span>
-                        Performance vs S&P 500
-                    </div>
-                    <div class="tool-content">{performance}</div>
-                </div>
-            ''', unsafe_allow_html=True)
-        
-        # TOOL 4: Dividend Analysis
-        with tool_col2:
-            with st.spinner("⏳ Tool 4: Analyzing dividends..."):
-                time.sleep(0.5)
-                dividend = analyze_dividend_potential(ticker)
-            st.markdown(f'''
-                <div class="tool-box">
-                    <div class="tool-title">
-                        <span class="tool-icon">4️⃣</span>
-                        Dividend Analysis
-                    </div>
-                    <div class="tool-content">{dividend}</div>
-                </div>
-            ''', unsafe_allow_html=True)
-        
-        # TOOL 5: Risk Assessment
-        with tool_col1:
-            with st.spinner("⏳ Tool 5: Assessing risk..."):
-                time.sleep(0.5)
-                risk = assess_risk_profile(ticker)
-            st.markdown(f'''
-                <div class="tool-box">
-                    <div class="tool-title">
-                        <span class="tool-icon">5️⃣</span>
-                        Risk Assessment
-                    </div>
-                    <div class="tool-content">{risk}</div>
-                </div>
-            ''', unsafe_allow_html=True)
-        
-        # TOOL 6: Growth Metrics
-        with tool_col2:
-            with st.spinner("⏳ Tool 6: Analyzing growth..."):
-                time.sleep(0.5)
-                growth = analyze_growth_metrics(ticker)
-            st.markdown(f'''
-                <div class="tool-box">
-                    <div class="tool-title">
-                        <span class="tool-icon">6️⃣</span>
-                        Growth Metrics
-                    </div>
-                    <div class="tool-content">{growth}</div>
-                </div>
-            ''', unsafe_allow_html=True)
-        
-        # TOOL 7: Insider Activity
-        with tool_col1:
-            with st.spinner("⏳ Tool 7: Checking insider activity..."):
-                time.sleep(0.5)
-                insider = analyze_insider_activity(ticker)
-            st.markdown(f'''
-                <div class="tool-box">
-                    <div class="tool-title">
-                        <span class="tool-icon">7️⃣</span>
-                        Insider Activity
-                    </div>
-                    <div class="tool-content">{insider}</div>
-                </div>
-            ''', unsafe_allow_html=True)
-        
-        # TOOL 8: Valuation Snapshot
-        with tool_col2:
-            with st.spinner("⏳ Tool 8: Creating valuation snapshot..."):
-                time.sleep(0.5)
-                valuation = valuation_snapshot(ticker)
-            st.markdown(f'''
-                <div class="tool-box">
-                    <div class="tool-title">
-                        <span class="tool-icon">8️⃣</span>
-                        Valuation Snapshot
-                    </div>
-                    <div class="tool-content">{valuation}</div>
-                </div>
-            ''', unsafe_allow_html=True)
-        
-        # TOOL 9: Quality Score
-        with tool_col1:
-            with st.spinner("⏳ Tool 9: Calculating quality score..."):
-                time.sleep(0.5)
-                quality = calculate_quality_score(ticker)
-            st.markdown(f'''
-                <div class="tool-box">
-                    <div class="tool-title">
-                        <span class="tool-icon">9️⃣</span>
-                        Quality Score (A-F Rating)
-                    </div>
-                    <div class="tool-content">{quality}</div>
-                </div>
-            ''', unsafe_allow_html=True)
-        
-        # TOOL 10: Price Target
-        with tool_col2:
-            with st.spinner("⏳ Tool 10: Estimating price targets..."):
-                time.sleep(0.5)
-                targets = estimate_price_target(ticker)
-            st.markdown(f'''
-                <div class="tool-box">
-                    <div class="tool-title">
-                        <span class="tool-icon">🔟</span>
-                        Price Target Estimation
-                    </div>
-                    <div class="tool-content">{targets}</div>
-                </div>
-            ''', unsafe_allow_html=True)
-        
-        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+        with terminal_tabs[0]:
+            st.markdown("### Core Financial Fundamentals")
+            try:
+                fundamentals_raw = get_stock_fundamentals(ticker)
+                st.text_area("Raw Data Output", value=fundamentals_raw, height=250, label_visibility="collapsed")
+            except Exception as e:
+                st.error(f"Could not load fundamentals: {e}")
+                
+        with terminal_tabs[1]:
+            st.markdown("### Market News & Sentiment Headlines")
+            try:
+                news_raw = get_recent_news(ticker)
+                st.text_area("Raw Data Output", value=news_raw, height=250, label_visibility="collapsed")
+            except Exception as e:
+                st.error(f"Could not load news: {e}")
+                
+        with terminal_tabs[2]:
+            st.markdown("### Dividend History & Yield Analysis")
+            try:
+                dividend_raw = analyze_dividend_potential(ticker)
+                st.text_area("Raw Data Output", value=dividend_raw, height=250, label_visibility="collapsed")
+            except Exception as e:
+                st.error(f"Could not load dividend metrics: {e}")
+                
+        with terminal_tabs[3]:
+            st.markdown("### Mathematical Risk & Volatility Assessment")
+            try:
+                risk_raw = assess_risk_profile(ticker)
+                st.text_area("Raw Data Output", value=risk_raw, height=250, label_visibility="collapsed")
+            except Exception as e:
+                st.error(f"Could not load risk metrics: {e}")
+                
+        with terminal_tabs[4]:
+            st.markdown("### Historical Growth & Operational Performance")
+            try:
+                growth_raw = analyze_growth_metrics(ticker)
+                st.text_area("Raw Data Output", value=growth_raw, height=250, label_visibility="collapsed")
+            except Exception as e:
+                st.error(f"Could not load growth metrics: {e}")
+                
+        with terminal_tabs[5]:
+            st.markdown("### Corporate Insider Trading Activity")
+            try:
+                insider_raw = analyze_insider_activity(ticker)
+                st.text_area("Raw Data Output", value=insider_raw, height=250, label_visibility="collapsed")
         
         # ============ COMPREHENSIVE AI SYNTHESIS ============
         st.markdown('<h2 class="section-title">🧠 AI Synthesis - All Tools Combined</h2>', unsafe_allow_html=True)
