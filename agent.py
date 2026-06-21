@@ -1,6 +1,6 @@
 from google import genai
 from google.genai import types
-from tools_ultimate import (
+from tools import (
     get_stock_fundamentals,
     get_recent_news,
     compare_performance,
