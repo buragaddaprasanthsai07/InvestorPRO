@@ -392,6 +392,37 @@ if ticker:
         # ============ ADVANCED CHARTING ============
         st.markdown('<h2 class="section-title">📈 Technical Charts</h2>', unsafe_allow_html=True)
         
+        # 1. The Interactive Time Selector
+        period_options = ["1D", "1W", "1M", "3M", "6M", "1Y", "5Y", "MAX"]
+        selected_period_label = st.radio(
+            "Select Time Period", 
+            options=period_options, 
+            index=5, # Defaults to "1Y" when the page loads
+            horizontal=True,
+            label_visibility="collapsed"
+        )
+        
+        # 2. Map the label to Yahoo Finance's exact format
+        period_mapping = {
+            "1D": "1d", "1W": "5d", "1M": "1mo", "3M": "3mo", 
+            "6M": "6mo", "1Y": "1y", "5Y": "5y", "MAX": "max"
+        }
+        selected_period = period_mapping[selected_period_label]
+        
+        # 3. Fetch specific data for the chart dynamically
+        with st.spinner(f"Updating chart for {selected_period_label}..."):
+            # Use smaller time intervals for short timeframes to make the chart look detailed
+            if selected_period == "1d":
+                chart_data = yf.Ticker(ticker).history(period="1d", interval="5m")
+            elif selected_period == "5d":
+                chart_data = yf.Ticker(ticker).history(period="5d", interval="15m")
+            else:
+                chart_data = yf.Ticker(ticker).history(period=selected_period, interval="1d")
+                
+            # Fallback just in case Yahoo blocks the intraday data temporarily
+            if chart_data.empty:
+                chart_data = hist_data 
+
         chart_tab1, chart_tab2 = st.tabs(["🕯️ Candlestick", "📉 Clean Trend Line"])
         
         common_layout = dict(
@@ -404,16 +435,18 @@ if ticker:
 
         with chart_tab1:
             fig_candle = go.Figure(data=[go.Candlestick(
-                x=hist_data.index, open=hist_data['Open'], high=hist_data['High'], low=hist_data['Low'], close=hist_data['Close'],
+                x=chart_data.index, open=chart_data['Open'], high=chart_data['High'], low=chart_data['Low'], close=chart_data['Close'],
                 increasing_line_color='#00FF88', decreasing_line_color='#FF3333'
             )])
             fig_candle.update_layout(**common_layout)
+            # Remove the bulky range slider for a cleaner, modern look
+            fig_candle.update_xaxes(rangeslider_visible=False) 
             st.plotly_chart(fig_candle, use_container_width=True)
 
         with chart_tab2:
             fig_line = go.Figure()
             fig_line.add_trace(go.Scatter(
-                x=hist_data.index, y=hist_data['Close'], mode='lines', fill='tozeroy', 
+                x=chart_data.index, y=chart_data['Close'], mode='lines', fill='tozeroy', 
                 line=dict(color='#00D4FF', width=2), fillcolor='rgba(0, 212, 255, 0.1)'
             ))
             fig_line.update_layout(yaxis_title="Price (USD)", **common_layout)
