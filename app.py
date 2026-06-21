@@ -1,6 +1,7 @@
 import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import pandas as pd
 import numpy as np
 import time
@@ -245,46 +246,6 @@ st.markdown("""
         from { opacity: 0; }
         to { opacity: 1; }
     }
-    
-    .tool-box {
-        background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(131, 56, 236, 0.08));
-        border-left: 4px solid #00D4FF;
-        border-radius: 10px;
-        padding: 20px;
-        margin: 15px 0;
-        animation: slideUp 0.6s ease-out;
-    }
-    
-    .tool-title {
-        color: #00D4FF;
-        font-weight: 700;
-        font-size: 1.1rem;
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    
-    .tool-icon {
-        font-size: 1.3rem;
-    }
-    
-    .tool-content {
-        color: #e0e0ff;
-        font-size: 0.95rem;
-        line-height: 1.6;
-        white-space: pre-wrap;
-    }
-    
-    .loading-dots {
-        animation: dots 1.4s infinite;
-    }
-    
-    @keyframes dots {
-        0%, 20% { content: '.'; }
-        40% { content: '..'; }
-        60%, 100% { content: '...'; }
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -411,7 +372,6 @@ if ticker:
         
         # 3. Fetch specific data for the chart dynamically
         with st.spinner(f"Updating chart for {selected_period_label}..."):
-            # Use smaller time intervals for short timeframes to make the chart look detailed
             if selected_period == "1d":
                 chart_data = yf.Ticker(ticker).history(period="1d", interval="5m")
             elif selected_period == "5d":
@@ -419,14 +379,13 @@ if ticker:
             else:
                 chart_data = yf.Ticker(ticker).history(period=selected_period, interval="1d")
                 
-            # Fallback just in case Yahoo blocks the intraday data temporarily
             if chart_data.empty:
                 chart_data = hist_data 
 
-        chart_tab1, chart_tab2 = st.tabs(["🕯️ Candlestick", "📉 Clean Trend Line"])
+        chart_tab1, chart_tab2 = st.tabs(["🕯️ Candlestick + Volume", "📉 Clean Trend Line"])
         
         common_layout = dict(
-            template="plotly_dark", height=450,
+            template="plotly_dark", height=550,
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             margin=dict(l=0, r=0, t=20, b=0),
             xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
@@ -434,13 +393,28 @@ if ticker:
         )
 
         with chart_tab1:
-            fig_candle = go.Figure(data=[go.Candlestick(
+            # Create subplots: 2 rows (Top for Candle, Bottom for Volume)
+            fig_candle = make_subplots(rows=2, cols=1, shared_xaxes=True, 
+                                       vertical_spacing=0.03, subplot_titles=('', ''),
+                                       row_width=[0.2, 0.7])
+
+            # Add Candlestick trace
+            fig_candle.add_trace(go.Candlestick(
                 x=chart_data.index, open=chart_data['Open'], high=chart_data['High'], low=chart_data['Low'], close=chart_data['Close'],
-                increasing_line_color='#00FF88', decreasing_line_color='#FF3333'
-            )])
-            fig_candle.update_layout(**common_layout)
-            # Remove the bulky range slider for a cleaner, modern look
-            fig_candle.update_xaxes(rangeslider_visible=False) 
+                increasing_line_color='#00FF88', decreasing_line_color='#FF3333',
+                name='Price'
+            ), row=1, col=1)
+
+            # Add Volume trace
+            colors = ['#00FF88' if row['Close'] >= row['Open'] else '#FF3333' for index, row in chart_data.iterrows()]
+            fig_candle.add_trace(go.Bar(
+                x=chart_data.index, y=chart_data['Volume'],
+                marker_color=colors,
+                name='Volume'
+            ), row=2, col=1)
+
+            fig_candle.update_layout(**common_layout, showlegend=False)
+            fig_candle.update_xaxes(rangeslider_visible=False)
             st.plotly_chart(fig_candle, use_container_width=True)
 
         with chart_tab2:
@@ -515,6 +489,35 @@ if ticker:
             try:
                 insider_raw = analyze_insider_activity(ticker)
                 st.text_area("Raw Data Output", value=insider_raw, height=250, label_visibility="collapsed")
+            except Exception as e:
+                st.error(f"Could not load insider activity: {e}")
+                
+        with terminal_tabs[6]:
+            st.markdown("### Valuation & Multiples Snapshot")
+            try:
+                valuation_raw = valuation_snapshot(ticker)
+                st.text_area("Raw Data Output", value=valuation_raw, height=250, label_visibility="collapsed")
+            except Exception as e:
+                st.error(f"Could not load valuation snapshot: {e}")
+                
+        with terminal_tabs[7]:
+            col_t1, col_t2 = st.columns(2)
+            with col_t1:
+                st.markdown("### Quantitative Quality Score")
+                try:
+                    quality_raw = calculate_quality_score(ticker)
+                    st.info(quality_raw)
+                except Exception as e:
+                    st.error(f"Could not compute score: {e}")
+            with col_t2:
+                st.markdown("### Target Pricing Projections")
+                try:
+                    target_raw = estimate_price_target(ticker)
+                    st.success(target_raw)
+                except Exception as e:
+                    st.error(f"Could not compute target targets: {e}")
+                    
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         
         # ============ COMPREHENSIVE AI SYNTHESIS ============
         st.markdown('<h2 class="section-title">🧠 AI Synthesis - All Tools Combined</h2>', unsafe_allow_html=True)
